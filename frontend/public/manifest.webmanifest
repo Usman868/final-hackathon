@@ -1,0 +1,18 @@
+{
+  "name": "MaintainIQ",
+  "short_name": "MaintainIQ",
+  "description": "AI-Powered QR Maintenance & Asset History",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f8fafc",
+  "theme_color": "#0f766e",
+  "orientation": "any",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}

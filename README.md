@@ -1,169 +1,209 @@
 # MaintainIQ
 
-**AI-powered QR Maintenance & Asset History Platform** — SMIT Final Hackathon (Track A: Advanced Full-Stack + GenAI).
-
-MaintainIQ gives every physical asset a digital identity, a QR-accessible public page, an AI-assisted issue-reporting workflow, and a permanent, append-only service history. The QR code is only the entry point — the real value is in issue triage, assignment, maintenance workflow, evidence, history, and accountability.
-
-## Live Demo
-
-| | URL |
-|--|-----|
-| **Web app** | https://maintainiq-web.vercel.app |
-| **API** | https://maintainiq-api.vercel.app/api |
-| **Repo** | https://github.com/TALHAdevelops/final-hackathon |
-
-Sign in at the web app with the demo credentials below. To try the public QR flow, open any asset in the console and use "Open public page".
+AI-Powered QR Maintenance & Asset History Platform  
+MERN stack · Hackathon Advanced Full-Stack + GenAI track
 
 ---
 
-## Tech Stack
+## What it does
 
-| Layer | Technology |
-|-------|-----------|
-| Backend | NestJS 11 (TypeScript) |
-| Database | PostgreSQL (Neon) + Prisma 6 ORM |
-| Frontend | Next.js 16 (App Router) + React 19 + Tailwind CSS v4 |
-| Auth | JWT + Passport, bcrypt, backend-enforced RBAC |
-| AI | Grok (xAI) / OpenRouter — OpenAI-compatible, with safe fallback |
-| QR | `qrcode` (encodes only the safe public URL) |
-
----
-
-## Architecture
-
-```
-Hackathon/
-├── backend/                 NestJS API
-│   ├── prisma/
-│   │   ├── schema.prisma     Data model (User, Asset, Issue, Maintenance, Evidence, History)
-│   │   └── seed.ts           Demo users
-│   └── src/
-│       ├── auth/             JWT auth, guards (JwtAuthGuard, RolesGuard), @Roles/@CurrentUser
-│       ├── users/            User service + admin user listing
-│       ├── assets/           Asset CRUD, unique code gen, filters
-│       ├── issues/           Issue reporting + workflow state machine
-│       ├── maintenance/      Maintenance records (notes/parts/cost)
-│       ├── history/          Append-only asset history
-│       ├── ai/               Grok triage (GrokService + AiService + fallback)
-│       ├── qr/               QR generation + print label
-│       ├── public/           Public (no-auth) QR surface: safe view, triage, report
-│       ├── dashboard/        Operational summary aggregations
-│       └── prisma/           Global PrismaService
-├── frontend/                Next.js app
-│   └── src/
-│       ├── app/
-│       │   ├── login/            Sign-in
-│       │   ├── (admin)/          Protected console (dashboard, assets, issues)
-│       │   └── a/[publicId]/     Public QR asset page + AI triage + report
-│       ├── components/       UI primitives + SVG icons
-│       └── lib/              API client, auth context, types, labels
-└── docker-compose.yml       Postgres (for local/Docker-bonus use)
-```
+- **Assets** with unique codes and QR codes that open a **public** page (no login)
+- **Public issue reporting** with **AI triage** (human review / edit / accept before save)
+- **Role-based staff app**: Admin, Supervisor, Technician
+- **Issue workflow** with server-enforced status transitions
+- **Permanent asset history** (append-only)
+- **Dashboard** stats and charts
+- **Notifications** (in-app + Socket.IO ready on backend)
+- Evidence uploads via **Cloudinary** (when configured)
 
 ---
 
-## Getting Started
+## Stack
 
-### Prerequisites
-- Node.js 20+ and npm
-- A PostgreSQL database URL (Neon free tier, or `docker compose up -d db`)
+| Layer | Tech |
+|--------|------|
+| Frontend | Vite · React 19 · React Router 7 · Tailwind CSS **v4** (`@tailwindcss/vite`) · Recharts · RHF + Zod · Lucide |
+| Backend | Node · Express · MongoDB / Mongoose · JWT (httpOnly cookies + Bearer) · Socket.IO · Multer · Cloudinary · OpenAI |
+| Auth roles | `ADMIN` · `SUPERVISOR` · `TECHNICIAN` · public reporter (no account) |
+
+**Tailwind v4 note:** no `tailwind.config.js` / `postcss.config.js`. Plugin in `vite.config.js`; tokens via `@theme` in `src/index.css`.
+
+---
+
+## Prerequisites
+
+- Node.js 20+
+- MongoDB running locally (or Atlas URI)
+- Optional: Cloudinary account, OpenAI API key
+
+---
+
+## Quick start
 
 ### 1. Backend
 
 ```bash
 cd backend
+cp .env.example .env
+# Edit .env — at minimum MONGODB_URI and JWT secrets
 npm install
-cp .env.example .env          # then set DATABASE_URL (and optionally GROK_API_KEY)
-npx prisma migrate dev        # creates tables
-npm run prisma:seed           # seeds demo users
-npm run start:dev             # http://localhost:4000/api
+npm run seed    # 5 users, 22 assets, 12 issues
+npm run dev     # http://localhost:5000
 ```
 
 ### 2. Frontend
 
 ```bash
 cd frontend
+cp .env.example .env
 npm install
-# .env.local already sets NEXT_PUBLIC_API_URL=http://localhost:4000/api
-npm run dev                   # http://localhost:3000
+npm run dev     # http://localhost:5173
 ```
 
-Open http://localhost:3000 and sign in with the demo credentials below.
+Frontend proxies `/api` to the backend in dev (`vite.config.js`).
 
 ---
 
-## Demo Credentials
+## Demo accounts
 
-| Role | Email | Password |
-|------|-------|----------|
-| Administrator | `admin@maintainiq.com` | `Admin@123` |
-| Technician | `tech@maintainiq.com` | `Tech@123` |
-| Supervisor | `supervisor@maintainiq.com` | `Super@123` |
+Password for all: **`Demo@12345`**
 
----
+| Role | Email |
+|------|--------|
+| Admin | `admin@maintainiq.demo` |
+| Supervisor | `supervisor@maintainiq.demo` |
+| Technician | `tech1@maintainiq.demo` |
+| Technician | `tech2@maintainiq.demo` |
+| Technician | `tech3@maintainiq.demo` |
 
-## Demo Scenario (end-to-end)
-
-1. **Admin** registers "Classroom Projector 01" → system generates a unique code (`AST-0001`) and a QR-accessible public page.
-2. A user opens the **public page** (scan QR or open link) and describes: *"The projector display is flickering and sometimes does not detect HDMI."*
-3. **AI Issue Triage** suggests a professional title, category, priority, possible causes and safe initial checks.
-4. The user **reviews/edits** the AI suggestions, then submits → unique issue number (`ISS-000001`); asset moves to `Issue Reported`.
-5. Issue appears on the internal **dashboard**; admin **assigns** it to a technician.
-6. Technician **starts inspection** → records the HDMI cable is damaged, **records maintenance** (notes, part, cost).
-7. Technician **resolves** the issue → asset returns to `Operational`.
-8. The asset's **permanent history** timeline is updated with every meaningful event.
+Public asset pages: `/public/asset/{publicId}`  
+(get `publicId` from asset detail or QR after seed).
 
 ---
 
-## Key Product Rules (enforced server-side)
+## Environment
 
-- **Backend RBAC** — roles enforced by guards, not by hiding UI buttons.
-- **Unique asset codes** — duplicates rejected (409).
-- **QR stability** — QR encodes a stable `publicId`; renaming/relocating an asset never breaks the mapping.
-- **Public safety** — the public page exposes only safe fields (no technician notes, costs, or user details).
-- **Issue state machine** — only valid transitions allowed (e.g. cannot resolve directly from `Reported`).
-- **Ownership** — a technician may only modify issues assigned to them.
-- **No resolve without a maintenance note.**
-- **Cost cannot be negative.**
-- **Append-only history** — significant actions always create a history record; no casual edit/delete.
-- **AI safety** — output is advisory and user-editable; API key stays server-side; structured JSON is validated; timeout/retry/fallback handled; hazards escalate priority and recommend a qualified technician.
+### Backend (`backend/.env`)
+
+| Variable | Required | Purpose |
+|----------|----------|---------|
+| `MONGODB_URI` | Yes | Mongo connection |
+| `JWT_ACCESS_SECRET` / `JWT_REFRESH_SECRET` | Yes | Token signing |
+| `CLIENT_URL` | Yes | CORS + QR public links (e.g. `http://localhost:5173`) |
+| `PORT` | No | Default `5000` |
+| `OPENAI_API_KEY` | No | AI triage (fallback heuristics if missing) |
+| `CLOUDINARY_*` | No | Evidence upload |
+| `ORG_NAME` | No | Printed on QR labels |
+
+### Frontend (`frontend/.env`)
+
+| Variable | Default |
+|----------|---------|
+| `VITE_API_URL` | `http://localhost:5000/api` |
+| `VITE_SOCKET_URL` | `http://localhost:5000` |
 
 ---
 
-## AI Issue Triage
+## Main API surface
 
-`POST /api/public/assets/:publicId/triage` sends asset context + the natural-language complaint to Grok and returns structured JSON:
+| Area | Base |
+|------|------|
+| Auth | `/api/auth` (login, refresh, me, technicians) |
+| Assets | `/api/assets` |
+| Public | `/api/public/assets/:publicId` · report issue |
+| Issues | `/api/issues` (list, assign, status transition) |
+| AI | `/api/ai/triage` (public + staff) |
+| Dashboard | `/api/dashboard/summary` |
+| Notifications | `/api/notifications` |
+| Uploads | `/api/issues/:id/evidence` |
 
-```json
-{
-  "title": "Water leakage and reduced cooling",
-  "category": "Leakage / Performance",
-  "priority": "HIGH",
-  "possibleCauses": ["Blocked drain pipe", "Dirty filter", "Frozen coil"],
-  "initialChecks": ["Turn off the unit if water is near wiring", "Inspect drainage", "Check filter"],
-  "recurringWarning": null,
-  "source": "ai"
-}
+---
+
+## Frontend routes
+
+| Path | Access |
+|------|--------|
+| `/login` | Public |
+| `/public/asset/:publicId` | Public (no sidebar) |
+| `/dashboard` | Staff |
+| `/assets`, `/assets/:id`, `/assets/new` | Staff (create/edit Admin) |
+| `/issues`, `/issues/:id` | Staff |
+| `/notifications` | Staff |
+
+---
+
+## Business rules (server-enforced)
+
+- Invalid **issue status** transitions are rejected
+- **Maintenance notes** required before resolving
+- Costs cannot be negative
+- Asset **codes** and **publicIds** are unique and stable (QR never breaks on edit)
+- History is permanent
+- Public endpoints only expose safe fields
+
+---
+
+## Project layout
+
+```
+MaintainIQ/
+├── CONTEXT.md          # Living progress tracker
+├── README.md
+├── backend/
+│   ├── src/
+│   │   ├── models/
+│   │   ├── services/
+│   │   ├── controllers/
+│   │   ├── routes/
+│   │   ├── middlewares/
+│   │   ├── ai/
+│   │   ├── sockets/
+│   │   └── seed/
+│   └── package.json
+└── frontend/
+    ├── src/
+    │   ├── api/
+    │   ├── pages/
+    │   ├── layouts/
+    │   ├── components/
+    │   └── context/
+    └── package.json
 ```
 
-If no `GROK_API_KEY` is set or the service is unavailable, a safe heuristic **fallback** (`source: "fallback"`) is returned so reporting never blocks. Every stored issue records the raw AI suggestion (`aiSuggested`) and whether the reporter edited it (`aiEdited`).
-
-To enable real AI: set `GROK_API_KEY`, `GROK_API_URL`, `GROK_MODEL` in `backend/.env`.
-- xAI: `GROK_API_URL=https://api.x.ai/v1`, `GROK_MODEL=grok-2-latest`
-- OpenRouter: `GROK_API_URL=https://openrouter.ai/api/v1`, `GROK_MODEL=x-ai/grok-4-fast:free`
+See **`CONTEXT.md`** for module-by-module completion status.
 
 ---
 
-## API Documentation
+## Scripts
 
-See [`API.md`](./API.md) for the full endpoint reference, or import
-[`MaintainIQ.postman_collection.json`](./MaintainIQ.postman_collection.json) into Postman.
+**Backend**
 
-Base URL: `http://localhost:4000/api`
+- `npm run dev` — nodemon
+- `npm run seed` — demo data (clears collections first)
+- `npm start` — production node
+
+**Frontend**
+
+- `npm run dev` — Vite
+- `npm run build` — production build
+- `npm run preview` — preview build
 
 ---
 
-## Bonus / Roadmap
-- Cloudinary evidence upload (model + Evidence table ready)
-- Docker deployment (`docker-compose.yml` included)
-- Additional AI: maintenance summaries, health analysis, multilingual complaints
+## Notes
+
+- AI triage always returns structured suggestions; the UI requires **human accept** (and records edit flags).
+- Without `OPENAI_API_KEY`, triage uses a deterministic fallback so the flow still works offline.
+- Without Cloudinary, core CRUD and workflows still run; evidence upload needs Cloudinary credentials.
+
+
+---
+
+## Deploy (Vercel + Render)
+
+See **[DEPLOY.md](./DEPLOY.md)** for:
+
+- Frontend on **Vercel**
+- Backend on **Render** (Socket.IO) or Vercel REST-only
+- GitHub Actions CI/CD
+- Env vars checklist

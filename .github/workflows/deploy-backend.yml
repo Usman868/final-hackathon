@@ -1,0 +1,25 @@
+name: Deploy Backend (Render)
+
+# Requires Render Blueprint or Deploy Hook secret.
+# Prefer connecting the GitHub repo in Render dashboard for auto-deploy.
+on:
+  push:
+    branches: [main, master]
+    paths:
+      - 'backend/**'
+      - '.github/workflows/deploy-backend.yml'
+  workflow_dispatch:
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger Render deploy hook (optional)
+        if: ${{ secrets.RENDER_DEPLOY_HOOK_URL != '' }}
+        run: |
+          curl -sS -X POST "${{ secrets.RENDER_DEPLOY_HOOK_URL }}"
+        env:
+          RENDER_DEPLOY_HOOK_URL: ${{ secrets.RENDER_DEPLOY_HOOK_URL }}
+
+      - name: Backend CI gate
+        run: echo "Push to main triggers Render auto-deploy if repo is linked. Set RENDER_DEPLOY_HOOK_URL for hook-based deploys."
