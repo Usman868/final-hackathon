@@ -12,8 +12,10 @@ MERN stack · Hackathon Advanced Full-Stack + GenAI track
 - **Role-based staff app**: Admin, Supervisor, Technician
 - **Issue workflow** with server-enforced status transitions
 - **Permanent asset history** (append-only)
-- **Dashboard** stats and charts
-- **Notifications** (in-app + Socket.IO ready on backend)
+- **Dashboard**, **Reports** (PDF), and **Analytics** (tech performance / SLA)
+- **Maintenance scheduling** and **audit log** (admin)
+- **Work notes**: labor hours × rate, parts table, live total
+- **Notifications** (in-app + Socket.IO)
 - Evidence uploads via **Cloudinary** (when configured)
 
 ---
@@ -47,7 +49,7 @@ cd backend
 cp .env.example .env
 # Edit .env — at minimum MONGODB_URI and JWT secrets
 npm install
-npm run seed    # 5 users, 22 assets, 12 issues
+npm run seed    # users, 22 assets, rich issues + SLA + maintenance
 npm run dev     # http://localhost:5000
 ```
 
@@ -67,6 +69,8 @@ Frontend proxies `/api` to the backend in dev (`vite.config.js`).
 ## Demo accounts
 
 Password for all: **`Demo@12345`**
+
+On the **login page**, use the **Admin / Supervisor / Technician** buttons to auto-fill credentials, then Sign in.
 
 | Role | Email |
 |------|--------|

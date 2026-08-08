@@ -13,13 +13,40 @@ import {
   Bell,
   Sparkles,
   History,
+  Shield,
+  UserCog,
+  HardHat,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { cn } from '../../utils/cn';
 
 const schema = z.object({
   email: z.string().email('Enter a valid email'),
   password: z.string().min(1, 'Password is required'),
 });
+
+const DEMO_PASSWORD = 'Demo@12345';
+
+const DEMO_ROLES = [
+  {
+    id: 'admin',
+    label: 'Admin',
+    email: 'admin@maintainiq.demo',
+    icon: Shield,
+  },
+  {
+    id: 'supervisor',
+    label: 'Supervisor',
+    email: 'supervisor@maintainiq.demo',
+    icon: UserCog,
+  },
+  {
+    id: 'technician',
+    label: 'Technician',
+    email: 'tech1@maintainiq.demo',
+    icon: HardHat,
+  },
+];
 
 export default function LoginPage() {
   const { login, isAuthenticated } = useAuth();
@@ -27,10 +54,12 @@ export default function LoginPage() {
   const location = useLocation();
   const [showPassword, setShowPassword] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [activeDemo, setActiveDemo] = useState(null);
 
   const {
     register,
     handleSubmit,
+    setValue,
     formState: { errors },
   } = useForm({
     resolver: zodResolver(schema),
@@ -40,6 +69,12 @@ export default function LoginPage() {
   if (isAuthenticated) {
     return <Navigate to="/dashboard" replace />;
   }
+
+  const fillDemo = (role) => {
+    setActiveDemo(role.id);
+    setValue('email', role.email, { shouldValidate: true });
+    setValue('password', DEMO_PASSWORD, { shouldValidate: true });
+  };
 
   const onSubmit = async (values) => {
     setSubmitting(true);
@@ -71,7 +106,39 @@ export default function LoginPage() {
             Sign in to manage assets, issues, and maintenance history.
           </p>
 
-          <form onSubmit={handleSubmit(onSubmit)} className="mt-8 space-y-5">
+          {/* Demo role quick-fill */}
+          <div className="mt-6">
+            <p className="mb-2 text-xs font-medium uppercase tracking-wide text-ink-400">
+              Quick demo login
+            </p>
+            <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+              {DEMO_ROLES.map((role) => {
+                const Icon = role.icon;
+                const active = activeDemo === role.id;
+                return (
+                  <button
+                    key={role.id}
+                    type="button"
+                    onClick={() => fillDemo(role)}
+                    className={cn(
+                      'flex items-center justify-center gap-2 rounded-lg border px-3 py-2.5 text-sm font-medium transition sm:flex-col sm:gap-1.5 sm:py-3',
+                      active
+                        ? 'border-brand-600 bg-brand-50 text-brand-800 ring-1 ring-brand-600/20'
+                        : 'border-border bg-white text-ink-700 hover:bg-ink-50'
+                    )}
+                  >
+                    <Icon className="h-4 w-4 shrink-0" />
+                    <span>{role.label}</span>
+                  </button>
+                );
+              })}
+            </div>
+            <p className="mt-2 text-[11px] text-ink-400">
+              Fills email & password — then click Sign in. Password for all: Demo@12345
+            </p>
+          </div>
+
+          <form onSubmit={handleSubmit(onSubmit)} className="mt-6 space-y-5">
             <div>
               <label htmlFor="email" className="mb-1.5 block text-sm font-medium text-ink-700">
                 Email address
@@ -119,26 +186,12 @@ export default function LoginPage() {
             <button
               type="submit"
               disabled={submitting}
-              className="flex w-full items-center justify-center gap-2 rounded-lg bg-brand-700 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-brand-800 disabled:cursor-not-allowed disabled:opacity-60"
+              className="flex w-full items-center justify-center gap-2 rounded-lg bg-brand-700 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-brand-800 disabled:opacity-60"
             >
-              {submitting ? (
-                <>
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                  Signing in…
-                </>
-              ) : (
-                'Sign in'
-              )}
+              {submitting && <Loader2 className="h-4 w-4 animate-spin" />}
+              Sign in
             </button>
           </form>
-
-          <div className="mt-6 rounded-xl border border-border bg-ink-50/80 px-4 py-3 text-xs text-ink-600">
-            <p className="font-semibold text-ink-700">Demo accounts</p>
-            <p className="mt-1">admin@maintainiq.demo · tech1@maintainiq.demo</p>
-            <p>
-              Password: <span className="font-mono">Demo@12345</span>
-            </p>
-          </div>
 
           <p className="mt-8 text-center text-xs text-ink-400">
             Public asset pages do not require login — scan a QR to report an issue.

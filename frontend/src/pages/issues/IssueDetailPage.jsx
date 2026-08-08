@@ -47,8 +47,10 @@ export default function IssueDetailPage() {
   const [nextStatus, setNextStatus] = useState('');
   const [inspectionNotes, setInspectionNotes] = useState('');
   const [maintenanceNotes, setMaintenanceNotes] = useState('');
+  const [laborHours, setLaborHours] = useState('');
+  const [hourlyRate, setHourlyRate] = useState('');
   const [laborCost, setLaborCost] = useState('');
-  const [partsText, setPartsText] = useState('');
+  const [parts, setParts] = useState([{ name: '', quantity: '1', unitCost: '' }]);
   const [uploadingEvidence, setUploadingEvidence] = useState(false);
   const [selectedFiles, setSelectedFiles] = useState([]);
 
@@ -72,6 +74,23 @@ export default function IssueDetailPage() {
       setInspectionNotes(iss.inspectionNotes || '');
       setMaintenanceNotes(iss.maintenanceNotes || '');
       setLaborCost(iss.laborCost != null ? String(iss.laborCost) : '');
+      setLaborHours(iss.laborHours != null ? String(iss.laborHours) : '');
+      if (iss.laborHours && iss.laborCost && Number(iss.laborHours) > 0) {
+        setHourlyRate(String(Math.round((Number(iss.laborCost) / Number(iss.laborHours)) * 100) / 100));
+      } else {
+        setHourlyRate('');
+      }
+      if (iss.parts?.length) {
+        setParts(
+          iss.parts.map((p) => ({
+            name: p.name || '',
+            quantity: String(p.quantity ?? 1),
+            unitCost: p.unitCost != null ? String(p.unitCost) : '',
+          }))
+        );
+      } else {
+        setParts([{ name: '', quantity: '1', unitCost: '' }]);
+      }
       setTechId(iss.assignedTo?._id || '');
       setNextStatus('');
     } catch (err) {
@@ -92,6 +111,48 @@ export default function IssueDetailPage() {
       .then(({ data }) => setTechnicians(data?.data?.technicians || []))
       .catch(() => {});
   }, [canAssign]);
+
+
+  const buildPartsPayload = () =>
+    parts
+      .map((row) => ({
+        name: row.name.trim(),
+        quantity: parseInt(row.quantity, 10) || 1,
+        unitCost: parseFloat(row.unitCost) || 0,
+      }))
+      .filter((row) => row.name);
+
+  const partsSubtotal = parts.reduce((sum, row) => {
+    const q = parseInt(row.quantity, 10) || 0;
+    const c = parseFloat(row.unitCost) || 0;
+    return sum + q * c;
+  }, 0);
+  const laborNum = parseFloat(laborCost) || 0;
+  const liveTotal = Math.round((partsSubtotal + laborNum) * 100) / 100;
+
+  const syncLaborFromHoursRate = (hours, rate) => {
+    const h = parseFloat(hours);
+    const r = parseFloat(rate);
+    if (!Number.isNaN(h) && !Number.isNaN(r) && h >= 0 && r >= 0) {
+      setLaborCost(String(Math.round(h * r * 100) / 100));
+    }
+  };
+
+  const updatePartRow = (index, field, value) => {
+    setParts((prev) =>
+      prev.map((row, i) => (i === index ? { ...row, [field]: value } : row))
+    );
+  };
+
+  const addPartRow = () => {
+    setParts((prev) => [...prev, { name: '', quantity: '1', unitCost: '' }]);
+  };
+
+  const removePartRow = (index) => {
+    setParts((prev) =>
+      prev.length <= 1 ? [{ name: '', quantity: '1', unitCost: '' }] : prev.filter((_, i) => i !== index)
+    );
+  };
 
   const handleAssign = async () => {
     if (!techId) {
@@ -127,22 +188,10 @@ export default function IssueDetailPage() {
       const payload = { status: nextStatus };
       if (inspectionNotes.trim()) payload.inspectionNotes = inspectionNotes.trim();
       if (maintenanceNotes.trim()) payload.maintenanceNotes = maintenanceNotes.trim();
+      if (laborHours !== '') payload.laborHours = parseFloat(laborHours) || 0;
       if (laborCost !== '') payload.laborCost = parseFloat(laborCost) || 0;
-      // simple parts: "name|qty|cost" per line
-      if (partsText.trim()) {
-        payload.parts = partsText
-          .split('\n')
-          .map((line) => line.trim())
-          .filter(Boolean)
-          .map((line) => {
-            const [name, qty, unitCost] = line.split('|').map((s) => s.trim());
-            return {
-              name,
-              quantity: parseInt(qty, 10) || 1,
-              unitCost: parseFloat(unitCost) || 0,
-            };
-          });
-      }
+      const partsPayload = buildPartsPayload();
+      if (partsPayload.length) payload.parts = partsPayload;
       const { data } = await transitionStatus(id, payload);
       if (data?.data?.issue) setIssue(data.data.issue);
       setNextStatus('');
@@ -160,7 +209,9 @@ export default function IssueDetailPage() {
       const payload = {
         inspectionNotes: inspectionNotes.trim() || undefined,
         maintenanceNotes: maintenanceNotes.trim() || undefined,
+        laborHours: laborHours !== '' ? parseFloat(laborHours) || 0 : undefined,
         laborCost: laborCost !== '' ? parseFloat(laborCost) || 0 : undefined,
+        parts: buildPartsPayload(),
       };
       const { data } = await updateIssue(id, payload);
       if (data?.data?.issue) setIssue(data.data.issue);
@@ -316,7 +367,7 @@ export default function IssueDetailPage() {
           </div>
 
           {/* Notes */}
-          <div className="card space-y-4 p-5">
+          <div className="card space-y-4 p-4 sm:p-5">
             <h2 className="text-sm font-semibold text-ink-900">Work notes</h2>
             <div>
               <label className="mb-1 block text-xs font-medium text-ink-500">
@@ -342,51 +393,140 @@ export default function IssueDetailPage() {
                 placeholder="Work performed…"
               />
             </div>
-            <div className="grid gap-3 sm:grid-cols-2">
-              <div>
-                <label className="mb-1 block text-xs font-medium text-ink-500">
-                  Labor cost
-                </label>
-                <input
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  value={laborCost}
-                  onChange={(e) => setLaborCost(e.target.value)}
-                  className={inp}
-                />
+
+            {/* Labor: hours × rate → cost */}
+            <div>
+              <p className="mb-2 text-xs font-medium text-ink-500">Labor</p>
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+                <div>
+                  <label className="mb-1 block text-[11px] text-ink-400">Hours</label>
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.25"
+                    value={laborHours}
+                    onChange={(e) => {
+                      const v = e.target.value;
+                      setLaborHours(v);
+                      syncLaborFromHoursRate(v, hourlyRate);
+                    }}
+                    className={inp}
+                    placeholder="1.5"
+                  />
+                </div>
+                <div>
+                  <label className="mb-1 block text-[11px] text-ink-400">Hourly rate</label>
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={hourlyRate}
+                    onChange={(e) => {
+                      const v = e.target.value;
+                      setHourlyRate(v);
+                      syncLaborFromHoursRate(laborHours, v);
+                    }}
+                    className={inp}
+                    placeholder="30"
+                  />
+                </div>
+                <div>
+                  <label className="mb-1 block text-[11px] text-ink-400">Labor cost</label>
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={laborCost}
+                    onChange={(e) => setLaborCost(e.target.value)}
+                    className={inp}
+                    placeholder="Auto or override"
+                  />
+                </div>
               </div>
-              <div>
-                <label className="mb-1 block text-xs font-medium text-ink-500">
-                  Parts (one per line: name|qty|unitCost)
-                </label>
-                <textarea
-                  rows={2}
-                  value={partsText}
-                  onChange={(e) => setPartsText(e.target.value)}
-                  className={ta}
-                  placeholder="Air Filter|1|25"
-                />
+              <p className="mt-1 text-[11px] text-ink-400">
+                Cost fills from hours × rate; you can override labor cost.
+              </p>
+            </div>
+
+            {/* Parts table */}
+            <div>
+              <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+                <p className="text-xs font-medium text-ink-500">Parts used</p>
+                <button
+                  type="button"
+                  onClick={addPartRow}
+                  className="rounded-lg border border-border bg-white px-2.5 py-1 text-xs font-medium text-ink-700 hover:bg-ink-50"
+                >
+                  + Add row
+                </button>
+              </div>
+              <div className="overflow-x-auto rounded-lg border border-border">
+                <table className="w-full min-w-[320px] text-left text-sm">
+                  <thead className="bg-ink-50 text-[11px] uppercase text-ink-500">
+                    <tr>
+                      <th className="px-3 py-2 font-medium">Part name</th>
+                      <th className="w-20 px-2 py-2 font-medium">Qty</th>
+                      <th className="w-24 px-2 py-2 font-medium">Unit cost</th>
+                      <th className="w-12 px-2 py-2" />
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-border">
+                    {parts.map((row, index) => (
+                      <tr key={index}>
+                        <td className="px-2 py-1.5 sm:px-3">
+                          <input
+                            value={row.name}
+                            onChange={(e) => updatePartRow(index, 'name', e.target.value)}
+                            className="w-full rounded-md border border-border bg-white px-2 py-1.5 text-sm outline-none focus:border-brand-600 focus:ring-1 focus:ring-brand-600/20"
+                            placeholder="e.g. Air filter"
+                          />
+                        </td>
+                        <td className="px-1 py-1.5 sm:px-2">
+                          <input
+                            type="number"
+                            min="1"
+                            value={row.quantity}
+                            onChange={(e) => updatePartRow(index, 'quantity', e.target.value)}
+                            className="w-full rounded-md border border-border bg-white px-2 py-1.5 text-sm outline-none focus:border-brand-600 focus:ring-1 focus:ring-brand-600/20"
+                          />
+                        </td>
+                        <td className="px-1 py-1.5 sm:px-2">
+                          <input
+                            type="number"
+                            min="0"
+                            step="0.01"
+                            value={row.unitCost}
+                            onChange={(e) => updatePartRow(index, 'unitCost', e.target.value)}
+                            className="w-full rounded-md border border-border bg-white px-2 py-1.5 text-sm outline-none focus:border-brand-600 focus:ring-1 focus:ring-brand-600/20"
+                            placeholder="0"
+                          />
+                        </td>
+                        <td className="px-1 py-1.5 text-center">
+                          <button
+                            type="button"
+                            onClick={() => removePartRow(index)}
+                            className="rounded-md p-1.5 text-ink-400 hover:bg-red-50 hover:text-red-600"
+                            aria-label="Remove part row"
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
             </div>
-            {(issue.parts?.length > 0 || issue.totalCost != null) && (
-              <div className="rounded-lg bg-ink-50 px-3 py-2 text-xs text-ink-600">
-                {issue.parts?.length > 0 && (
-                  <ul className="mb-1 space-y-0.5">
-                    {issue.parts.map((p, i) => (
-                      <li key={i}>
-                        {p.name} × {p.quantity} @ {p.unitCost}
-                      </li>
-                    ))}
-                  </ul>
-                )}
-                {issue.totalCost != null && (
-                  <p className="font-semibold text-ink-800">
-                    Total cost: {issue.totalCost}
-                  </p>
-                )}
-              </div>
-            )}
+
+            <div className="flex flex-col gap-2 rounded-lg bg-ink-50 px-3 py-2.5 text-sm sm:flex-row sm:items-center sm:justify-between">
+              <span className="text-ink-600">
+                Parts {partsSubtotal.toFixed(2)} + Labor {laborNum.toFixed(2)}
+              </span>
+              <span className="font-semibold text-ink-900">
+                Total (preview): {liveTotal.toFixed(2)}
+              </span>
+            </div>
+
             <button
               type="button"
               disabled={busy}
@@ -557,32 +697,59 @@ export default function IssueDetailPage() {
             )}
           </div>
 
-          {/* Assign */}
+          {/* Assign — only when workflow allows (Reported / Reopened) */}
           {canAssign && (
             <div className="card p-5">
               <h2 className="flex items-center gap-2 text-sm font-semibold text-ink-900">
-                <UserPlus className="h-4 w-4" /> Assign technician
+                <UserPlus className="h-4 w-4" />
+                {issue.assignedTo ? 'Technician' : 'Assign technician'}
               </h2>
-              <select
-                value={techId}
-                onChange={(e) => setTechId(e.target.value)}
-                className={cn(inp, 'mt-3')}
-              >
-                <option value="">Select technician</option>
-                {technicians.map((t) => (
-                  <option key={t._id} value={t._id}>
-                    {t.name}
-                  </option>
-                ))}
-              </select>
-              <button
-                type="button"
-                disabled={busy || !techId}
-                onClick={handleAssign}
-                className="mt-3 w-full rounded-lg bg-ink-800 px-3 py-2.5 text-sm font-semibold text-white hover:bg-ink-900 disabled:opacity-50"
-              >
-                Assign
-              </button>
+
+              {issue.assignedTo && (
+                <p className="mt-2 rounded-lg bg-ink-50 px-3 py-2 text-sm text-ink-700">
+                  Assigned to{' '}
+                  <span className="font-semibold text-ink-900">
+                    {issue.assignedTo.name}
+                  </span>
+                  {issue.assignedTo.email ? (
+                    <span className="text-ink-500"> · {issue.assignedTo.email}</span>
+                  ) : null}
+                </p>
+              )}
+
+              {(issue.status === ISSUE_STATUS.REPORTED ||
+                issue.status === ISSUE_STATUS.REOPENED) && (
+                <>
+                  <select
+                    value={techId}
+                    onChange={(e) => setTechId(e.target.value)}
+                    className={cn(inp, 'mt-3')}
+                  >
+                    <option value="">Select technician</option>
+                    {technicians.map((t) => (
+                      <option key={t._id} value={t._id}>
+                        {t.name}
+                      </option>
+                    ))}
+                  </select>
+                  <button
+                    type="button"
+                    disabled={busy || !techId}
+                    onClick={handleAssign}
+                    className="mt-3 w-full rounded-lg bg-ink-800 px-3 py-2.5 text-sm font-semibold text-white hover:bg-ink-900 disabled:opacity-50"
+                  >
+                    {issue.assignedTo ? 'Reassign' : 'Assign'}
+                  </button>
+                </>
+              )}
+
+              {issue.assignedTo &&
+                issue.status !== ISSUE_STATUS.REPORTED &&
+                issue.status !== ISSUE_STATUS.REOPENED && (
+                  <p className="mt-2 text-xs text-ink-400">
+                    Reassign is only available when status is Reported or Reopened.
+                  </p>
+                )}
             </div>
           )}
 

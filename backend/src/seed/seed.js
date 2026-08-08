@@ -366,8 +366,9 @@ async function seedAssets(admin) {
 }
 
 async function seedIssues(assets, users) {
-  console.log("Seeding issues (12)...");
+  console.log("Seeding issues (rich SLA set)...");
   const admin = users.find((u) => u.role === ROLES.ADMIN);
+  const supervisor = users.find((u) => u.role === ROLES.SUPERVISOR);
   const tech1 = users.find((u) => u.email === "tech1@maintainiq.demo");
   const tech2 = users.find((u) => u.email === "tech2@maintainiq.demo");
   const tech3 = users.find((u) => u.email === "tech3@maintainiq.demo");
@@ -445,6 +446,7 @@ async function seedIssues(assets, users) {
       assignedTo: tech2,
       maintenanceNotes:
         "Replaced IR receiver module. Tested with spare remote.",
+      laborHours: 1.25,
       laborCost: 500,
       parts: [{ name: "IR Receiver Module", quantity: 1, unitCost: 800 }],
       resolvedBy: tech2,
@@ -461,6 +463,7 @@ async function seedIssues(assets, users) {
       assignedTo: tech1,
       maintenanceNotes:
         "Cleaned filters and checked refrigerant. Performance restored.",
+      laborHours: 3,
       laborCost: 1200,
       resolvedBy: tech1,
       closedBy: admin,
@@ -587,6 +590,172 @@ async function seedIssues(assets, users) {
       assignedTo: tech2,
       reporterName: "Faculty",
     },
+
+    // --- Extra resolved (for Analytics SLA rankings) ---
+    {
+      assetIdx: 1,
+      title: "Lab projector HDMI port intermittent",
+      description: "HDMI signal drops when cable is moved. Port loose.",
+      priority: PRIORITY.MEDIUM,
+      category: "Hardware Failure",
+      status: ISSUE_STATUS.RESOLVED,
+      assignedTo: tech1,
+      resolvedBy: tech1,
+      maintenanceNotes: "Reseated port and replaced cable. Tested stable.",
+      laborHours: 0.75,
+      laborCost: 300,
+      parts: [{ name: "HDMI cable", quantity: 1, unitCost: 450 }],
+      reporterName: "Lab Staff",
+      daysAgo: 5,
+      metSla: true,
+    },
+    {
+      assetIdx: 3,
+      title: "Server rack fan noisy",
+      description: "Loud bearing noise from top fan tray.",
+      priority: PRIORITY.HIGH,
+      category: "Hardware Failure",
+      status: ISSUE_STATUS.RESOLVED,
+      assignedTo: tech1,
+      resolvedBy: tech1,
+      maintenanceNotes: "Replaced fan module. Temperatures normal.",
+      laborCost: 800,
+      parts: [{ name: "Rack fan module", quantity: 1, unitCost: 3200 }],
+      reporterName: "IT Ops",
+      daysAgo: 2,
+      metSla: true,
+    },
+    {
+      assetIdx: 6,
+      title: "Microscope light flicker",
+      description: "Illumination flickers at high intensity.",
+      priority: PRIORITY.MEDIUM,
+      category: "Hardware Failure",
+      status: ISSUE_STATUS.RESOLVED,
+      assignedTo: tech2,
+      resolvedBy: tech2,
+      maintenanceNotes: "Replaced lamp and cleaned contacts.",
+      laborCost: 400,
+      parts: [{ name: "Microscope lamp", quantity: 1, unitCost: 1500 }],
+      reporterName: "Lab Assistant",
+      daysAgo: 6,
+      metSla: true,
+    },
+    {
+      assetIdx: 9,
+      title: "Conference display no signal",
+      description: "Display stays on no-signal after laptop connect.",
+      priority: PRIORITY.HIGH,
+      category: "Connectivity",
+      status: ISSUE_STATUS.CLOSED,
+      assignedTo: tech2,
+      resolvedBy: tech2,
+      closedBy: admin,
+      maintenanceNotes: "Faulty adapter replaced. All inputs OK.",
+      laborCost: 600,
+      parts: [{ name: "USB-C hub", quantity: 1, unitCost: 2800 }],
+      reporterName: "Faculty",
+      daysAgo: 4,
+      metSla: true,
+    },
+    {
+      assetIdx: 12,
+      title: "Generator battery low voltage",
+      description: "Battery voltage below threshold during weekly test.",
+      priority: PRIORITY.CRITICAL,
+      category: "Hardware Failure",
+      status: ISSUE_STATUS.RESOLVED,
+      assignedTo: tech1,
+      resolvedBy: tech1,
+      maintenanceNotes: "Installed new battery bank cell. Load test passed.",
+      laborHours: 4,
+      laborCost: 2500,
+      parts: [{ name: "Battery cell 12V", quantity: 2, unitCost: 4500 }],
+      reporterName: "Facilities",
+      isCritical: true,
+      daysAgo: 4,
+      metSla: true,
+    },
+    {
+      assetIdx: 15,
+      title: "UPS self-test failed",
+      description: "UPS reported battery fault on scheduled self-test.",
+      priority: PRIORITY.HIGH,
+      category: "Hardware Failure",
+      status: ISSUE_STATUS.RESOLVED,
+      assignedTo: tech3,
+      resolvedBy: tech3,
+      maintenanceNotes: "Battery pack replaced. Self-test green.",
+      laborCost: 1200,
+      parts: [{ name: "UPS battery pack", quantity: 1, unitCost: 9000 }],
+      reporterName: "IT Ops",
+      daysAgo: 7,
+      metSla: false,
+    },
+    {
+      assetIdx: 18,
+      title: "Door access reader offline",
+      description: "Card reader LED off. Door locked open mode.",
+      priority: PRIORITY.HIGH,
+      category: "Connectivity",
+      status: ISSUE_STATUS.RESOLVED,
+      assignedTo: tech3,
+      resolvedBy: tech3,
+      maintenanceNotes: "PoE injector failed; replaced and re-enrolled reader.",
+      laborCost: 900,
+      parts: [{ name: "PoE injector", quantity: 1, unitCost: 3500 }],
+      reporterName: "Security",
+      daysAgo: 3,
+      metSla: true,
+    },
+    {
+      assetIdx: 19,
+      title: "Elevator cabin light out",
+      description: "Main cabin light not working. Emergency light only.",
+      priority: PRIORITY.MEDIUM,
+      category: "Hardware Failure",
+      status: ISSUE_STATUS.CLOSED,
+      assignedTo: tech3,
+      resolvedBy: tech3,
+      closedBy: supervisor,
+      maintenanceNotes: "LED driver replaced. Cabin lighting restored.",
+      laborCost: 700,
+      parts: [{ name: "LED driver", quantity: 1, unitCost: 2200 }],
+      reporterName: "Reception",
+      daysAgo: 5,
+      metSla: true,
+    },
+    {
+      assetIdx: 5,
+      title: "Fire extinguisher pressure low – wing B",
+      description: "Gauge in red zone on floor 2 extinguisher.",
+      priority: PRIORITY.CRITICAL,
+      category: "Safety Hazard",
+      status: ISSUE_STATUS.RESOLVED,
+      assignedTo: tech1,
+      resolvedBy: tech1,
+      maintenanceNotes: "Unit swapped with certified replacement. Tag updated.",
+      laborCost: 500,
+      isCritical: true,
+      reporterName: "Safety Officer",
+      daysAgo: 2,
+      metSla: true,
+    },
+    {
+      assetIdx: 16,
+      title: "Whiteboard touch unresponsive top edge",
+      description: "Touch fails on upper 20% of interactive board.",
+      priority: PRIORITY.LOW,
+      category: "Software / Firmware",
+      status: ISSUE_STATUS.RESOLVED,
+      assignedTo: tech2,
+      resolvedBy: tech2,
+      maintenanceNotes: "Firmware update and recalibration completed.",
+      laborCost: 350,
+      reporterName: "Faculty",
+      daysAgo: 3,
+      metSla: false,
+    },
   ];
 
   const issues = [];
@@ -595,9 +764,10 @@ async function seedIssues(assets, users) {
     const asset = assets[spec.assetIdx];
     const now = new Date();
 
-    const reportedAt = new Date(
-      now.getTime() - Math.random() * 14 * 24 * 60 * 60 * 1000,
-    );
+    // Prefer last ~30 days so Analytics (7/30/90) shows SLA rankings
+    const daysAgo =
+      spec.daysAgo != null ? spec.daysAgo : 3 + Math.floor(Math.random() * 18);
+    const reportedAt = new Date(now.getTime() - daysAgo * 24 * 60 * 60 * 1000);
     const slaHours = SLA_HOURS_BY_PRIORITY[spec.priority] ?? 72;
     const dueAt = new Date(reportedAt.getTime() + slaHours * 60 * 60 * 1000);
     const issueData = {
@@ -613,29 +783,64 @@ async function seedIssues(assets, users) {
       reportedAt,
       slaHours,
       dueAt,
-      slaBreached:
-        ![ISSUE_STATUS.RESOLVED, ISSUE_STATUS.CLOSED].includes(spec.status) &&
-        dueAt < now,
+      slaBreached: false,
     };
 
     if (spec.assignedTo) {
       issueData.assignedTo = spec.assignedTo._id;
       issueData.assignedBy = admin._id;
-      issueData.assignedAt = new Date(issueData.reportedAt.getTime() + 3600000);
+      issueData.assignedAt = new Date(reportedAt.getTime() + 2 * 3600000);
+      issueData.firstRespondedAt = new Date(reportedAt.getTime() + 3 * 3600000);
     }
     if (spec.inspectionNotes) issueData.inspectionNotes = spec.inspectionNotes;
     if (spec.maintenanceNotes)
       issueData.maintenanceNotes = spec.maintenanceNotes;
+    if (spec.laborHours != null) issueData.laborHours = spec.laborHours;
     if (spec.laborCost) issueData.laborCost = spec.laborCost;
+    // Derive hours if only cost given (assume ~400/hr for demo consistency)
+    if (spec.laborCost && spec.laborHours == null) {
+      issueData.laborHours = Math.round((spec.laborCost / 400) * 4) / 4 || 1;
+    }
     if (spec.parts) issueData.parts = spec.parts;
     if (spec.requiresParts) issueData.requiresParts = true;
     if (spec.resolvedBy) {
       issueData.resolvedBy = spec.resolvedBy._id;
-      issueData.resolvedAt = new Date(now.getTime() - 2 * 24 * 60 * 60 * 1000);
+      const metSla = spec.metSla !== false;
+      const resolveOffsetMs = metSla
+        ? Math.min(slaHours * 0.45 * 3600000, 18 * 3600000)
+        : slaHours * 3600000 + 8 * 3600000;
+      issueData.resolvedAt = new Date(reportedAt.getTime() + resolveOffsetMs);
+      if (!issueData.firstRespondedAt) {
+        issueData.firstRespondedAt = new Date(
+          reportedAt.getTime() + Math.min(resolveOffsetMs / 2, 4 * 3600000),
+        );
+      }
+      issueData.slaBreached = issueData.resolvedAt > dueAt;
     }
     if (spec.closedBy) {
       issueData.closedBy = spec.closedBy._id;
-      issueData.closedAt = new Date(now.getTime() - 1 * 24 * 60 * 60 * 1000);
+      issueData.closedAt = new Date(
+        (issueData.resolvedAt || now).getTime() + 5 * 3600000,
+      );
+    }
+    if (
+      ![ISSUE_STATUS.RESOLVED, ISSUE_STATUS.CLOSED].includes(spec.status) &&
+      dueAt < now
+    ) {
+      issueData.slaBreached = true;
+    }
+    // Guarantee resolvedAt for closed/resolved so Analytics SLA range matches
+    if (
+      [ISSUE_STATUS.RESOLVED, ISSUE_STATUS.CLOSED].includes(spec.status) &&
+      !issueData.resolvedAt
+    ) {
+      const metSla = spec.metSla !== false;
+      const resolveOffsetMs = metSla
+        ? Math.min(slaHours * 0.45 * 3600000, 18 * 3600000)
+        : slaHours * 3600000 + 8 * 3600000;
+      issueData.resolvedAt = new Date(reportedAt.getTime() + resolveOffsetMs);
+      issueData.slaBreached = issueData.resolvedAt > dueAt;
+      if (spec.assignedTo) issueData.resolvedBy = spec.assignedTo._id;
     }
     if (spec.status === ISSUE_STATUS.INSPECTION_STARTED) {
       issueData.inspectionStartedAt = new Date(now.getTime() - 5 * 3600000);
@@ -703,6 +908,7 @@ async function seedIssues(assets, users) {
         findings: spec.inspectionNotes,
         partsUsed: spec.parts || [],
         laborCost: spec.laborCost || 0,
+        laborHours: spec.laborHours || issueData.laborHours || 0,
         completedAt: issue.resolvedAt || now,
       });
     }

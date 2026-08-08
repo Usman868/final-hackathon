@@ -53,6 +53,7 @@ export default function NotificationsPage() {
       setItems((prev) =>
         prev.map((n) => (n._id === id ? { ...n, isRead: true } : n))
       );
+      window.dispatchEvent(new Event('notifications:changed'));
     } catch (err) {
       toast.error(err.response?.data?.message || 'Could not mark as read');
     }
@@ -64,6 +65,7 @@ export default function NotificationsPage() {
       await markAllAsRead();
       setItems((prev) => prev.map((n) => ({ ...n, isRead: true })));
       toast.success('All marked as read');
+      window.dispatchEvent(new Event('notifications:changed'));
     } catch (err) {
       toast.error(err.response?.data?.message || 'Failed');
     } finally {

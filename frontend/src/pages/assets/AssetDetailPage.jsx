@@ -1,5 +1,10 @@
-import { useCallback, useEffect, useState } from 'react';
-import { Link, useParams, useSearchParams, useNavigate } from 'react-router-dom';
+import { useCallback, useEffect, useState } from "react";
+import {
+  Link,
+  useParams,
+  useSearchParams,
+  useNavigate,
+} from "react-router-dom";
 import {
   ArrowLeft,
   Loader2,
@@ -11,20 +16,24 @@ import {
   Calendar,
   User,
   RefreshCw,
-} from 'lucide-react';
-import QRCode from 'react-qr-code';
-import { format } from 'date-fns';
+  Layers,
+  HeartPulse,
+  Box,
+  Factory,
+} from "lucide-react";
+import QRCode from "react-qr-code";
+import { format } from "date-fns";
 import {
   getAssetById,
   getAssetQR,
   getAssetHistory,
   retireAsset,
-} from '../../api/assets.api';
-import { AssetStatusBadge } from '../../components/ui/StatusBadge';
-import { useAuth } from '../../context/AuthContext';
-import { API_BASE_URL } from '../../constants';
-import toast from 'react-hot-toast';
-import { cn } from '../../utils/cn';
+} from "../../api/assets.api";
+import { AssetStatusBadge } from "../../components/ui/StatusBadge";
+import { useAuth } from "../../context/AuthContext";
+import { API_BASE_URL } from "../../constants";
+import toast from "react-hot-toast";
+import { cn } from "../../utils/cn";
 
 export default function AssetDetailPage() {
   const { id } = useParams();
@@ -36,7 +45,9 @@ export default function AssetDetailPage() {
   const [qr, setQr] = useState(null);
   const [history, setHistory] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [tab, setTab] = useState(searchParams.get('tab') === 'qr' ? 'qr' : 'overview');
+  const [tab, setTab] = useState(
+    searchParams.get("tab") === "qr" ? "qr" : "overview",
+  );
   const [retiring, setRetiring] = useState(false);
 
   const load = useCallback(async () => {
@@ -48,13 +59,13 @@ export default function AssetDetailPage() {
         getAssetHistory(id, { limit: 20 }).catch(() => null),
       ]);
       const a = assetRes?.data?.data?.asset;
-      if (!a) throw new Error('Asset data unavailable');
+      if (!a) throw new Error("Asset data unavailable");
       setAsset(a);
       if (qrRes?.data?.data) setQr(qrRes.data.data);
       if (histRes) setHistory(histRes?.data?.data?.history || []);
     } catch (err) {
-      toast.error(err.response?.data?.message || 'Asset not found');
-      navigate('/assets');
+      toast.error(err.response?.data?.message || "Asset not found");
+      navigate("/assets");
     } finally {
       setLoading(false);
     }
@@ -66,42 +77,46 @@ export default function AssetDetailPage() {
 
   const publicUrl =
     qr?.publicUrl ||
-    (asset ? `${window.location.origin}/public/asset/${asset.publicId}` : '');
+    (asset ? `${window.location.origin}/public/asset/${asset.publicId}` : "");
 
   const copyLink = async () => {
     try {
       await navigator.clipboard.writeText(publicUrl);
-      toast.success('Public link copied');
+      toast.success("Public link copied");
     } catch {
-      toast.error('Could not copy');
+      toast.error("Could not copy");
     }
   };
 
   const downloadQr = () => {
-    const svg = document.getElementById('asset-qr-svg');
+    const svg = document.getElementById("asset-qr-svg");
     if (!svg) return;
     const serializer = new XMLSerializer();
     const source = serializer.serializeToString(svg);
-    const blob = new Blob([source], { type: 'image/svg+xml;charset=utf-8' });
+    const blob = new Blob([source], { type: "image/svg+xml;charset=utf-8" });
     const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
+    const a = document.createElement("a");
     a.href = url;
-    a.download = `${asset?.assetCode || 'asset'}-qr.svg`;
+    a.download = `${asset?.assetCode || "asset"}-qr.svg`;
     a.click();
     URL.revokeObjectURL(url);
   };
 
   const handleRetire = async () => {
-    if (!window.confirm('Retire this asset permanently? This cannot be undone casually.')) {
+    if (
+      !window.confirm(
+        "Retire this asset permanently? This cannot be undone casually.",
+      )
+    ) {
       return;
     }
     setRetiring(true);
     try {
-      await retireAsset(id, 'Retired from admin UI');
-      toast.success('Asset retired');
+      await retireAsset(id, "Retired from admin UI");
+      toast.success("Asset retired");
       load();
     } catch (err) {
-      toast.error(err.response?.data?.message || 'Failed to retire');
+      toast.error(err.response?.data?.message || "Failed to retire");
     } finally {
       setRetiring(false);
     }
@@ -128,10 +143,14 @@ export default function AssetDetailPage() {
             <ArrowLeft className="h-4 w-4" /> Assets
           </Link>
           <div className="flex flex-wrap items-center gap-3">
-            <h1 className="text-xl font-bold text-ink-900 sm:text-2xl">{asset.name}</h1>
+            <h1 className="text-xl font-bold text-ink-900 sm:text-2xl">
+              {asset.name}
+            </h1>
             <AssetStatusBadge status={asset.status} />
           </div>
-          <p className="mt-1 font-mono text-sm text-brand-700">{asset.assetCode}</p>
+          <p className="mt-1 font-mono text-sm text-brand-700">
+            {asset.assetCode}
+          </p>
         </div>
         <div className="flex flex-wrap gap-2">
           <button
@@ -141,7 +160,7 @@ export default function AssetDetailPage() {
           >
             <RefreshCw className="h-4 w-4" />
           </button>
-          {isAdmin && asset.status !== 'Retired' && (
+          {isAdmin && asset.status !== "Retired" && (
             <>
               <Link
                 to={`/assets/${id}/edit`}
@@ -165,19 +184,19 @@ export default function AssetDetailPage() {
       {/* Tabs */}
       <div className="flex gap-1 border-b border-border">
         {[
-          { id: 'overview', label: 'Overview' },
-          { id: 'qr', label: 'QR & label' },
-          { id: 'history', label: 'History' },
+          { id: "overview", label: "Overview" },
+          { id: "qr", label: "QR & label" },
+          { id: "history", label: "History" },
         ].map((t) => (
           <button
             key={t.id}
             type="button"
             onClick={() => setTab(t.id)}
             className={cn(
-              'border-b-2 px-4 py-2.5 text-sm font-medium transition',
+              "border-b-2 px-4 py-2.5 text-sm font-medium transition",
               tab === t.id
-                ? 'border-brand-600 text-brand-800'
-                : 'border-transparent text-ink-500 hover:text-ink-800'
+                ? "border-brand-600 text-brand-800"
+                : "border-transparent text-ink-500 hover:text-ink-800",
             )}
           >
             {t.label}
@@ -185,27 +204,37 @@ export default function AssetDetailPage() {
         ))}
       </div>
 
-      {tab === 'overview' && (
+      {tab === "overview" && (
         <div className="grid gap-4 lg:grid-cols-3">
           <div className="card space-y-4 p-5 lg:col-span-2">
-            <h2 className="text-sm font-semibold text-ink-900">Asset information</h2>
+            <h2 className="text-sm font-semibold text-ink-900">
+              Asset information
+            </h2>
             <dl className="grid gap-4 sm:grid-cols-2">
-              <Info label="Category" value={asset.category} />
-              <Info label="Condition" value={asset.condition} />
+              <Info label="Category" value={asset.category} icon={Layers} />
+              <Info
+                label="Condition"
+                value={asset.condition}
+                icon={HeartPulse}
+              />
               <Info label="Location" value={asset.location} icon={MapPin} />
-              <Info label="Model" value={asset.model || '—'} />
-              <Info label="Manufacturer" value={asset.manufacturer || '—'} />
+              <Info label="Model" value={asset.model || "—"} icon={Box} />
+              <Info
+                label="Manufacturer"
+                value={asset.manufacturer || "—"}
+                icon={Factory}
+              />
               <Info
                 label="Assigned technician"
-                value={asset.assignedTechnician?.name || 'Unassigned'}
+                value={asset.assignedTechnician?.name || "Unassigned"}
                 icon={User}
               />
               <Info
                 label="Last service"
                 value={
                   asset.lastServiceDate
-                    ? format(new Date(asset.lastServiceDate), 'MMM d, yyyy')
-                    : '—'
+                    ? format(new Date(asset.lastServiceDate), "MMM d, yyyy")
+                    : "—"
                 }
                 icon={Calendar}
               />
@@ -213,8 +242,8 @@ export default function AssetDetailPage() {
                 label="Next service"
                 value={
                   asset.nextServiceDate
-                    ? format(new Date(asset.nextServiceDate), 'MMM d, yyyy')
-                    : '—'
+                    ? format(new Date(asset.nextServiceDate), "MMM d, yyyy")
+                    : "—"
                 }
                 icon={Calendar}
               />
@@ -232,11 +261,15 @@ export default function AssetDetailPage() {
               <h2 className="text-sm font-semibold text-ink-900">Counters</h2>
               <div className="mt-3 grid grid-cols-2 gap-3">
                 <div className="rounded-lg bg-ink-50 p-3 text-center">
-                  <p className="text-2xl font-bold text-ink-900">{asset.totalIssues ?? 0}</p>
+                  <p className="text-2xl font-bold text-ink-900">
+                    {asset.totalIssues ?? 0}
+                  </p>
                   <p className="text-xs text-ink-500">Total issues</p>
                 </div>
                 <div className="rounded-lg bg-ink-50 p-3 text-center">
-                  <p className="text-2xl font-bold text-ink-900">{asset.openIssues ?? 0}</p>
+                  <p className="text-2xl font-bold text-ink-900">
+                    {asset.openIssues ?? 0}
+                  </p>
                   <p className="text-xs text-ink-500">Open issues</p>
                 </div>
               </div>
@@ -260,7 +293,7 @@ export default function AssetDetailPage() {
         </div>
       )}
 
-      {tab === 'qr' && (
+      {tab === "qr" && (
         <div className="card max-w-xl p-6">
           <h2 className="text-sm font-semibold text-ink-900">QR code</h2>
           <p className="mt-1 text-xs text-ink-500">
@@ -278,7 +311,9 @@ export default function AssetDetailPage() {
               />
             </div>
             <div className="flex-1 space-y-3 text-sm">
-              <p className="break-all font-mono text-xs text-ink-600">{publicUrl}</p>
+              <p className="break-all font-mono text-xs text-ink-600">
+                {publicUrl}
+              </p>
               <div className="flex flex-wrap gap-2">
                 <button
                   type="button"
@@ -304,11 +339,15 @@ export default function AssetDetailPage() {
               </div>
               {qr?.label && (
                 <div className="mt-4 rounded-lg border border-dashed border-border bg-ink-50 p-3 text-xs text-ink-600">
-                  <p className="font-semibold text-ink-800">{qr.label.organizationName}</p>
+                  <p className="font-semibold text-ink-800">
+                    {qr.label.organizationName}
+                  </p>
                   <p>{qr.label.assetName}</p>
                   <p className="font-mono">{qr.label.assetCode}</p>
                   <p>{qr.label.location}</p>
-                  <p className="mt-1 text-ink-400">{qr.label.scanInstruction}</p>
+                  <p className="mt-1 text-ink-400">
+                    {qr.label.scanInstruction}
+                  </p>
                 </div>
               )}
             </div>
@@ -316,15 +355,21 @@ export default function AssetDetailPage() {
         </div>
       )}
 
-      {tab === 'history' && (
+      {tab === "history" && (
         <div className="card">
           <div className="border-b border-border px-5 py-4">
-            <h2 className="text-sm font-semibold text-ink-900">Permanent timeline</h2>
-            <p className="text-xs text-ink-400">Append-only — not casually editable</p>
+            <h2 className="text-sm font-semibold text-ink-900">
+              Permanent timeline
+            </h2>
+            <p className="text-xs text-ink-400">
+              Append-only — not casually editable
+            </p>
           </div>
           <ul className="divide-y divide-border">
             {history.length === 0 ? (
-              <li className="px-5 py-10 text-center text-sm text-ink-400">No history yet</li>
+              <li className="px-5 py-10 text-center text-sm text-ink-400">
+                No history yet
+              </li>
             ) : (
               history.map((h) => (
                 <li key={h._id} className="flex gap-3 px-5 py-4">
@@ -332,15 +377,15 @@ export default function AssetDetailPage() {
                   <div className="min-w-0 flex-1">
                     <p className="text-sm text-ink-800">{h.description}</p>
                     <p className="mt-0.5 text-xs text-ink-400">
-                      {h.actorName || h.actor?.name || 'System'}
+                      {h.actorName || h.actor?.name || "System"}
                       {h.createdAt
-                        ? ` · ${format(new Date(h.createdAt), 'MMM d, yyyy · HH:mm')}`
-                        : ''}
-                      {h.issueNumber ? ` · ${h.issueNumber}` : ''}
+                        ? ` · ${format(new Date(h.createdAt), "MMM d, yyyy · HH:mm")}`
+                        : ""}
+                      {h.issueNumber ? ` · ${h.issueNumber}` : ""}
                     </p>
                   </div>
                   <span className="shrink-0 text-[10px] font-medium uppercase tracking-wide text-ink-400">
-                    {h.action?.replace(/_/g, ' ')}
+                    {h.action?.replace(/_/g, " ")}
                   </span>
                 </li>
               ))

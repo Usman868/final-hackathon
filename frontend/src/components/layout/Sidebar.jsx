@@ -6,6 +6,7 @@ import {
   Users,
   UserCog,
   FileBarChart,
+  LineChart,
   Calendar,
   ClipboardList,
   Bell,
@@ -25,6 +26,7 @@ const navItems = [
   { to: '/audit', label: 'Audit log', icon: ClipboardList, roles: ['ADMIN'] },
   { to: '/technicians', label: 'Technicians', icon: Users, roles: ['ADMIN', 'SUPERVISOR'] },
   { to: '/reports', label: 'Reports', icon: FileBarChart, roles: ['ADMIN', 'SUPERVISOR'] },
+  { to: '/analytics', label: 'Analytics', icon: LineChart, roles: ['ADMIN', 'SUPERVISOR'] },
   { to: '/notifications', label: 'Alerts', icon: Bell },
   { to: '/settings', label: 'Settings', icon: Settings },
 ];

@@ -92,6 +92,7 @@ import notificationRoutes from './routes/notification.routes.js';
 import dashboardRoutes from './routes/dashboard.routes.js';
 import maintenanceRoutes from './routes/maintenance.routes.js';
 import auditRoutes from './routes/audit.routes.js';
+import analyticsRoutes from './routes/analytics.routes.js';
 // ... more routes will be mounted in later modules
 
 app.use('/api/auth', authRoutes);
@@ -103,6 +104,7 @@ app.use('/api/notifications', notificationRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/maintenance', maintenanceRoutes);
 app.use('/api/audit', auditRoutes);
+app.use('/api/analytics', analyticsRoutes);
 
 // 404 handler
 app.use((req, res, next) => {

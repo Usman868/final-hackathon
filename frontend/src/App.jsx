@@ -16,6 +16,7 @@ import TechniciansPage from './pages/technicians/TechniciansPage';
 import SettingsPage from './pages/settings/SettingsPage';
 import UsersPage from './pages/users/UsersPage';
 import ReportsPage from './pages/reports/ReportsPage';
+import AnalyticsPage from './pages/analytics/AnalyticsPage';
 import MaintenancePage from './pages/maintenance/MaintenancePage';
 import AuditLogPage from './pages/audit/AuditLogPage';
 import NotFoundPage from './pages/NotFoundPage';
@@ -102,6 +103,14 @@ function App() {
           element={
             <ProtectedRoute roles={['ADMIN', 'SUPERVISOR']}>
               <ReportsPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="analytics"
+          element={
+            <ProtectedRoute roles={['ADMIN', 'SUPERVISOR']}>
+              <AnalyticsPage />
             </ProtectedRoute>
           }
         />

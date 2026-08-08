@@ -6,6 +6,7 @@ import {
   PRIORITY,
   ISSUE_CATEGORIES,
   ISSUE_STATUS_TRANSITIONS,
+  SLA_HOURS_BY_PRIORITY,
 } from '../constants/index.js';
 
 const evidenceSchema = new mongoose.Schema(
@@ -160,6 +161,11 @@ const issueSchema = new mongoose.Schema(
       type: [partSchema],
       default: [],
     },
+    laborHours: {
+      type: Number,
+      min: [0, 'Labor hours cannot be negative'],
+      default: 0,
+    },
     laborCost: {
       type: Number,
       min: [0, 'Labor cost cannot be negative'],
@@ -199,6 +205,23 @@ const issueSchema = new mongoose.Schema(
     },
     reopenedAt: {
       type: Date,
+    },
+    firstRespondedAt: {
+      type: Date,
+    },
+    // SLA
+    slaHours: {
+      type: Number,
+      min: 0,
+    },
+    dueAt: {
+      type: Date,
+      index: true,
+    },
+    slaBreached: {
+      type: Boolean,
+      default: false,
+      index: true,
     },
     // Who performed key actions
     resolvedBy: {
@@ -245,6 +268,17 @@ issueSchema.pre('validate', function (next) {
   // Auto-flag critical
   if (this.priority === PRIORITY.CRITICAL) {
     this.isCritical = true;
+  }
+  // SLA auto: set hours + dueAt for new issues when not provided
+  if (this.isNew && this.reportedAt && (this.slaHours == null || !this.dueAt)) {
+    const hours =
+      this.slaHours ??
+      SLA_HOURS_BY_PRIORITY[this.priority] ??
+      72;
+    this.slaHours = hours;
+    if (!this.dueAt) {
+      this.dueAt = new Date(new Date(this.reportedAt).getTime() + hours * 3600000);
+    }
   }
   next();
 });

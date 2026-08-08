@@ -324,6 +324,10 @@ export const transitionIssueStatus = async (issueId, newStatus, actor, extra = {
   if (extra.maintenanceNotes !== undefined) issue.maintenanceNotes = extra.maintenanceNotes;
   if (extra.completionNotes !== undefined) issue.completionNotes = extra.completionNotes;
   if (extra.parts) issue.parts = extra.parts;
+  if (extra.laborHours !== undefined) {
+    if (extra.laborHours < 0) throw new ApiError(400, 'Labor hours cannot be negative');
+    issue.laborHours = extra.laborHours;
+  }
   if (extra.laborCost !== undefined) {
     if (extra.laborCost < 0) throw new ApiError(400, 'Labor cost cannot be negative');
     issue.laborCost = extra.laborCost;
@@ -485,6 +489,7 @@ export const updateIssueDetails = async (issueId, updates, actor) => {
     'maintenanceNotes',
     'completionNotes',
     'parts',
+    'laborHours',
     'laborCost',
     'requiresParts',
   ];

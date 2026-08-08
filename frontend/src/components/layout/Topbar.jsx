@@ -1,8 +1,8 @@
-import { useEffect, useState } from "react";
-import { Menu, Bell, Search, LogOut } from "lucide-react";
-import { useAuth } from "../../context/AuthContext";
-import { useNavigate } from "react-router-dom";
-import { getUnreadCount } from "../../api/notifications.api";
+import { useEffect, useState } from 'react';
+import { Menu, Bell, Search, LogOut } from 'lucide-react';
+import { useAuth } from '../../context/AuthContext';
+import { useNavigate } from 'react-router-dom';
+import { getUnreadCount } from '../../api/notifications.api';
 
 export default function Topbar({ onMenuClick, title, unreadBump = 0 }) {
   const { user, logout } = useAuth();
@@ -20,9 +20,12 @@ export default function Topbar({ onMenuClick, title, unreadBump = 0 }) {
     };
     fetchCount();
     const id = setInterval(fetchCount, 60000);
+    const onChanged = () => fetchCount();
+    window.addEventListener('notifications:changed', onChanged);
     return () => {
       cancelled = true;
       clearInterval(id);
+      window.removeEventListener('notifications:changed', onChanged);
     };
   }, []);
 
@@ -34,7 +37,7 @@ export default function Topbar({ onMenuClick, title, unreadBump = 0 }) {
 
   const handleLogout = async () => {
     await logout();
-    navigate("/login");
+    navigate('/login');
   };
 
   return (
@@ -56,7 +59,7 @@ export default function Topbar({ onMenuClick, title, unreadBump = 0 }) {
         ) : null}
       </div>
 
-      {/* Center: search */}
+      {/* Center: search (flex-1, not glued to actions) */}
       <div className="relative mx-3 hidden min-w-0 flex-1 md:block lg:mx-6 xl:mx-8">
         <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-400" />
         <input
@@ -66,31 +69,31 @@ export default function Topbar({ onMenuClick, title, unreadBump = 0 }) {
         />
       </div>
 
-      {/* Spacer on mobile when search is hidden */}
+      {/* Spacer on mobile when search is hidden — pushes actions right */}
       <div className="flex-1 md:hidden" />
 
-      {/* Right: notifications · profile · logout */}
+      {/* Right: notifications · profile · logout — always far right */}
       <div className="ml-auto flex shrink-0 items-center gap-2 sm:gap-3 lg:gap-4">
         <button
           type="button"
-          onClick={() => navigate("/notifications")}
+          onClick={() => navigate('/notifications')}
           className="relative rounded-lg p-2.5 text-ink-500 hover:bg-ink-100 hover:text-ink-800"
           aria-label="Notifications"
         >
           <Bell className="h-5 w-5" />
           {unread > 0 && (
             <span className="absolute right-1 top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-danger-600 px-1 text-[10px] font-bold text-white">
-              {unread > 9 ? "9+" : unread}
+              {unread > 9 ? '9+' : unread}
             </span>
           )}
         </button>
 
         <div className="hidden items-center gap-2.5 border-l border-border pl-3 sm:flex lg:gap-3 lg:pl-4">
           <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-brand-700 text-xs font-semibold text-white">
-            {(user?.name || "U")
-              .split(" ")
+            {(user?.name || 'U')
+              .split(' ')
               .map((n) => n[0])
-              .join("")
+              .join('')
               .slice(0, 2)
               .toUpperCase()}
           </div>

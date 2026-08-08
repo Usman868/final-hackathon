@@ -1,5 +1,5 @@
-import { useCallback, useEffect, useState } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { useCallback, useEffect, useState } from "react";
+import { Link, useParams } from "react-router-dom";
 import {
   Wrench,
   MapPin,
@@ -12,17 +12,23 @@ import {
   RotateCcw,
   AlertCircle,
   X,
-} from 'lucide-react';
-import { format } from 'date-fns';
+  Layers,
+  HeartPulse,
+  Box,
+} from "lucide-react";
+import { format } from "date-fns";
 import {
   getPublicAsset,
   reportPublicIssue,
   runTriage,
-} from '../../api/public.api';
-import { AssetStatusBadge, PriorityBadge } from '../../components/ui/StatusBadge';
-import { ISSUE_CATEGORIES, PRIORITY } from '../../constants';
-import toast from 'react-hot-toast';
-import { cn } from '../../utils/cn';
+} from "../../api/public.api";
+import {
+  AssetStatusBadge,
+  PriorityBadge,
+} from "../../components/ui/StatusBadge";
+import { ISSUE_CATEGORIES, PRIORITY } from "../../constants";
+import toast from "react-hot-toast";
+import { cn } from "../../utils/cn";
 
 /**
  * Standalone public page – NO app sidebar.
@@ -43,13 +49,13 @@ export default function PublicAssetPage() {
       const { data } = await getPublicAsset(publicId);
       const a = data?.data?.asset;
       if (!a) {
-        setError('Asset data unavailable');
+        setError("Asset data unavailable");
         setAsset(null);
         return;
       }
       setAsset(a);
     } catch (err) {
-      setError(err.response?.data?.message || 'Asset not found');
+      setError(err.response?.data?.message || "Asset not found");
       setAsset(null);
     } finally {
       setLoading(false);
@@ -75,7 +81,9 @@ export default function PublicAssetPage() {
       <PublicShell>
         <div className="card mx-auto max-w-md p-8 text-center">
           <AlertCircle className="mx-auto h-10 w-10 text-amber-500" />
-          <h1 className="mt-3 text-lg font-semibold text-ink-900">Asset not found</h1>
+          <h1 className="mt-3 text-lg font-semibold text-ink-900">
+            Asset not found
+          </h1>
           <p className="mt-1 text-sm text-ink-500">{error}</p>
         </div>
       </PublicShell>
@@ -89,14 +97,18 @@ export default function PublicAssetPage() {
           <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-emerald-50 text-emerald-600">
             <Check className="h-6 w-6" />
           </div>
-          <h1 className="mt-4 text-lg font-semibold text-ink-900">Issue reported</h1>
+          <h1 className="mt-4 text-lg font-semibold text-ink-900">
+            Issue reported
+          </h1>
           <p className="mt-2 text-sm text-ink-500">
             Thank you. Your report has been received.
           </p>
           <p className="mt-3 font-mono text-sm font-medium text-brand-700">
             {submitted.issueNumber}
           </p>
-          <p className="mt-1 text-xs text-ink-400">Status: {submitted.status}</p>
+          <p className="mt-1 text-xs text-ink-400">
+            Status: {submitted.status}
+          </p>
           <button
             type="button"
             onClick={() => {
@@ -122,12 +134,14 @@ export default function PublicAssetPage() {
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div>
                 <p className="text-xs font-medium uppercase tracking-wide text-ink-400">
-                  {asset.organizationName || 'Asset'}
+                  {asset.organizationName || "Asset"}
                 </p>
                 <h1 className="mt-0.5 text-xl font-bold text-ink-900 sm:text-2xl">
                   {asset.name}
                 </h1>
-                <p className="mt-1 font-mono text-sm text-brand-700">{asset.assetCode}</p>
+                <p className="mt-1 font-mono text-sm text-brand-700">
+                  {asset.assetCode}
+                </p>
               </div>
               <AssetStatusBadge status={asset.status} />
             </div>
@@ -140,8 +154,8 @@ export default function PublicAssetPage() {
               label="Last service"
               value={
                 asset.lastServiceDate
-                  ? format(new Date(asset.lastServiceDate), 'MMM d, yyyy')
-                  : '—'
+                  ? format(new Date(asset.lastServiceDate), "MMM d, yyyy")
+                  : "—"
               }
             />
             <InfoRow
@@ -149,15 +163,23 @@ export default function PublicAssetPage() {
               label="Next service"
               value={
                 asset.nextServiceDate
-                  ? format(new Date(asset.nextServiceDate), 'MMM d, yyyy')
-                  : '—'
+                  ? format(new Date(asset.nextServiceDate), "MMM d, yyyy")
+                  : "—"
               }
             />
-            <InfoRow label="Category" value={asset.category} />
-            <InfoRow label="Condition" value={asset.condition || '—'} />
+            <InfoRow icon={Layers} label="Category" value={asset.category} />
             <InfoRow
+              icon={HeartPulse}
+              label="Condition"
+              value={asset.condition || "—"}
+            />
+            <InfoRow
+              icon={Box}
               label="Model"
-              value={[asset.manufacturer, asset.model].filter(Boolean).join(' · ') || '—'}
+              value={
+                [asset.manufacturer, asset.model].filter(Boolean).join(" · ") ||
+                "—"
+              }
             />
           </div>
 
@@ -172,11 +194,14 @@ export default function PublicAssetPage() {
         {/* Safe history */}
         <div className="card">
           <div className="border-b border-border px-5 py-3.5">
-            <h2 className="text-sm font-semibold text-ink-900">Activity history</h2>
+            <h2 className="text-sm font-semibold text-ink-900">
+              Activity history
+            </h2>
             <p className="text-xs text-ink-400">Public-safe timeline only</p>
           </div>
           <ul className="divide-y divide-border">
-            {(Array.isArray(asset.history) ? asset.history : []).length === 0 ? (
+            {(Array.isArray(asset.history) ? asset.history : []).length ===
+            0 ? (
               <li className="px-5 py-8 text-center text-sm text-ink-400">
                 No public activity yet
               </li>
@@ -187,10 +212,10 @@ export default function PublicAssetPage() {
                   <div className="min-w-0 flex-1">
                     <p className="text-sm text-ink-800">{h.description}</p>
                     <p className="mt-0.5 text-xs text-ink-400">
-                      {h.actorName || 'System'}
+                      {h.actorName || "System"}
                       {h.createdAt
-                        ? ` · ${format(new Date(h.createdAt), 'MMM d, yyyy')}`
-                        : ''}
+                        ? ` · ${format(new Date(h.createdAt), "MMM d, yyyy")}`
+                        : ""}
                     </p>
                   </div>
                 </li>
@@ -210,14 +235,14 @@ export default function PublicAssetPage() {
                     Found an issue with this asset?
                   </p>
                   <p className="text-xs text-ink-500">
-                    No login required. AI helps structure your report — you review before
-                    submit.
+                    No login required. AI helps structure your report — you
+                    review before submit.
                   </p>
                 </div>
               </div>
               <button
                 type="button"
-                disabled={asset.isRetired || asset.status === 'Retired'}
+                disabled={asset.isRetired || asset.status === "Retired"}
                 onClick={() => setShowReport(true)}
                 className="shrink-0 rounded-lg bg-danger-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-danger-700 disabled:cursor-not-allowed disabled:opacity-50"
               >
@@ -235,7 +260,7 @@ export default function PublicAssetPage() {
         )}
 
         <p className="text-center text-xs text-ink-400">
-          Managed with MaintainIQ ·{' '}
+          Managed with MaintainIQ ·{" "}
           <Link to="/login" className="text-brand-700 hover:underline">
             Staff login
           </Link>
@@ -279,16 +304,16 @@ function InfoRow({ icon: Icon, label, value }) {
  * Multi-step: describe → AI triage → human review/edit → submit
  */
 function ReportIssueForm({ asset, publicId, onCancel, onSuccess }) {
-  const [step, setStep] = useState('form'); // form | review | submitting
-  const [description, setDescription] = useState('');
-  const [reporterName, setReporterName] = useState('');
-  const [reporterEmail, setReporterEmail] = useState('');
-  const [reporterPhone, setReporterPhone] = useState('');
+  const [step, setStep] = useState("form"); // form | review | submitting
+  const [description, setDescription] = useState("");
+  const [reporterName, setReporterName] = useState("");
+  const [reporterEmail, setReporterEmail] = useState("");
+  const [reporterPhone, setReporterPhone] = useState("");
 
   // Editable triage fields (human can change)
-  const [title, setTitle] = useState('');
+  const [title, setTitle] = useState("");
   const [priority, setPriority] = useState(PRIORITY.MEDIUM);
-  const [category, setCategory] = useState('');
+  const [category, setCategory] = useState("");
   const [possibleCauses, setPossibleCauses] = useState([]);
   const [initialChecks, setInitialChecks] = useState([]);
   const [triageMeta, setTriageMeta] = useState(null);
@@ -297,7 +322,7 @@ function ReportIssueForm({ asset, publicId, onCancel, onSuccess }) {
 
   const requestTriage = async () => {
     if (!description.trim() || description.trim().length < 10) {
-      toast.error('Please describe the issue (at least 10 characters)');
+      toast.error("Please describe the issue (at least 10 characters)");
       return;
     }
     setBusy(true);
@@ -307,29 +332,31 @@ function ReportIssueForm({ asset, publicId, onCancel, onSuccess }) {
         publicId,
       });
       const t = data.data.triage;
-      setTitle(t.title || '');
+      setTitle(t.title || "");
       setPriority(t.priority || PRIORITY.MEDIUM);
-      setCategory(t.category || '');
+      setCategory(t.category || "");
       setPossibleCauses(t.possibleCauses || []);
       setInitialChecks(t.initialChecks || []);
       setTriageMeta(t);
       setEdited(false);
-      setStep('review');
+      setStep("review");
       toast.success(
-        t.source === 'openai'
-          ? 'AI suggestion ready — please review'
-          : 'Suggestion ready (offline fallback) — please review'
+        t.source === "openai"
+          ? "AI suggestion ready — please review"
+          : "Suggestion ready (offline fallback) — please review",
       );
     } catch (err) {
       // Still allow manual report without AI
-      toast.error(err.response?.data?.message || 'AI unavailable — continue manually');
+      toast.error(
+        err.response?.data?.message || "AI unavailable — continue manually",
+      );
       setTitle(description.trim().slice(0, 80));
       setPriority(PRIORITY.MEDIUM);
-      setCategory('');
+      setCategory("");
       setPossibleCauses([]);
       setInitialChecks([]);
-      setTriageMeta({ wasAISuggested: false, source: 'none' });
-      setStep('review');
+      setTriageMeta({ wasAISuggested: false, source: "none" });
+      setStep("review");
     } finally {
       setBusy(false);
     }
@@ -339,11 +366,11 @@ function ReportIssueForm({ asset, publicId, onCancel, onSuccess }) {
 
   const submit = async () => {
     if (!title.trim() || !description.trim()) {
-      toast.error('Title and description are required');
+      toast.error("Title and description are required");
       return;
     }
     setBusy(true);
-    setStep('submitting');
+    setStep("submitting");
     try {
       const aiTriage = triageMeta
         ? {
@@ -372,10 +399,10 @@ function ReportIssueForm({ asset, publicId, onCancel, onSuccess }) {
         aiTriage,
       });
       onSuccess(data.data.issue);
-      toast.success('Issue submitted');
+      toast.success("Issue submitted");
     } catch (err) {
-      toast.error(err.response?.data?.message || 'Submit failed');
-      setStep('review');
+      toast.error(err.response?.data?.message || "Submit failed");
+      setStep("review");
     } finally {
       setBusy(false);
     }
@@ -385,7 +412,9 @@ function ReportIssueForm({ asset, publicId, onCancel, onSuccess }) {
     <div className="card p-5 sm:p-6">
       <div className="mb-4 flex items-start justify-between gap-2">
         <div>
-          <h2 className="text-base font-semibold text-ink-900">Report an issue</h2>
+          <h2 className="text-base font-semibold text-ink-900">
+            Report an issue
+          </h2>
           <p className="text-xs text-ink-500">
             {asset.name} · {asset.assetCode}
           </p>
@@ -400,7 +429,7 @@ function ReportIssueForm({ asset, publicId, onCancel, onSuccess }) {
         </button>
       </div>
 
-      {step === 'form' && (
+      {step === "form" && (
         <div className="space-y-4">
           <div>
             <label className="mb-1 block text-sm font-medium text-ink-700">
@@ -414,11 +443,15 @@ function ReportIssueForm({ asset, publicId, onCancel, onSuccess }) {
               placeholder="Describe what you observed, when it started, and any safety concerns…"
               className={field}
             />
-            <p className="mt-1 text-right text-xs text-ink-400">{description.length}/2000</p>
+            <p className="mt-1 text-right text-xs text-ink-400">
+              {description.length}/2000
+            </p>
           </div>
           <div className="grid gap-3 sm:grid-cols-2">
             <div>
-              <label className="mb-1 block text-xs font-medium text-ink-500">Your name</label>
+              <label className="mb-1 block text-xs font-medium text-ink-500">
+                Your name
+              </label>
               <input
                 value={reporterName}
                 onChange={(e) => setReporterName(e.target.value)}
@@ -427,7 +460,9 @@ function ReportIssueForm({ asset, publicId, onCancel, onSuccess }) {
               />
             </div>
             <div>
-              <label className="mb-1 block text-xs font-medium text-ink-500">Phone</label>
+              <label className="mb-1 block text-xs font-medium text-ink-500">
+                Phone
+              </label>
               <input
                 value={reporterPhone}
                 onChange={(e) => setReporterPhone(e.target.value)}
@@ -437,7 +472,9 @@ function ReportIssueForm({ asset, publicId, onCancel, onSuccess }) {
             </div>
           </div>
           <div>
-            <label className="mb-1 block text-xs font-medium text-ink-500">Email</label>
+            <label className="mb-1 block text-xs font-medium text-ink-500">
+              Email
+            </label>
             <input
               type="email"
               value={reporterEmail}
@@ -471,7 +508,7 @@ function ReportIssueForm({ asset, publicId, onCancel, onSuccess }) {
         </div>
       )}
 
-      {(step === 'review' || step === 'submitting') && (
+      {(step === "review" || step === "submitting") && (
         <div className="space-y-4">
           <div className="flex items-center gap-2 rounded-lg bg-brand-50 px-3 py-2 text-xs text-brand-800">
             <Sparkles className="h-3.5 w-3.5" />
@@ -499,7 +536,9 @@ function ReportIssueForm({ asset, publicId, onCancel, onSuccess }) {
 
           <div className="grid gap-3 sm:grid-cols-2">
             <div>
-              <label className="mb-1 block text-sm font-medium text-ink-700">Priority</label>
+              <label className="mb-1 block text-sm font-medium text-ink-700">
+                Priority
+              </label>
               <select
                 value={priority}
                 onChange={(e) => {
@@ -516,7 +555,9 @@ function ReportIssueForm({ asset, publicId, onCancel, onSuccess }) {
               </select>
             </div>
             <div>
-              <label className="mb-1 block text-sm font-medium text-ink-700">Category</label>
+              <label className="mb-1 block text-sm font-medium text-ink-700">
+                Category
+              </label>
               <select
                 value={category}
                 onChange={(e) => {
@@ -536,7 +577,9 @@ function ReportIssueForm({ asset, publicId, onCancel, onSuccess }) {
           </div>
 
           <div>
-            <label className="mb-1 block text-sm font-medium text-ink-700">Description *</label>
+            <label className="mb-1 block text-sm font-medium text-ink-700">
+              Description *
+            </label>
             <textarea
               rows={3}
               value={description}
@@ -547,7 +590,9 @@ function ReportIssueForm({ asset, publicId, onCancel, onSuccess }) {
 
           {possibleCauses.length > 0 && (
             <div className="rounded-xl border border-border bg-ink-50/80 p-3">
-              <p className="text-xs font-semibold text-ink-700">Possible causes</p>
+              <p className="text-xs font-semibold text-ink-700">
+                Possible causes
+              </p>
               <ul className="mt-1 list-inside list-disc text-sm text-ink-600">
                 {possibleCauses.map((c, i) => (
                   <li key={i}>{c}</li>
@@ -558,7 +603,9 @@ function ReportIssueForm({ asset, publicId, onCancel, onSuccess }) {
 
           {initialChecks.length > 0 && (
             <div className="rounded-xl border border-border bg-ink-50/80 p-3">
-              <p className="text-xs font-semibold text-ink-700">Initial safety checks</p>
+              <p className="text-xs font-semibold text-ink-700">
+                Initial safety checks
+              </p>
               <ul className="mt-1 list-inside list-disc text-sm text-ink-600">
                 {initialChecks.map((c, i) => (
                   <li key={i}>{c}</li>
@@ -574,7 +621,11 @@ function ReportIssueForm({ asset, publicId, onCancel, onSuccess }) {
               onClick={submit}
               className="inline-flex items-center gap-2 rounded-lg bg-brand-700 px-4 py-2.5 text-sm font-semibold text-white hover:bg-brand-800 disabled:opacity-60"
             >
-              {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
+              {busy ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Check className="h-4 w-4" />
+              )}
               Accept & submit issue
             </button>
             <button
@@ -588,7 +639,7 @@ function ReportIssueForm({ asset, publicId, onCancel, onSuccess }) {
             <button
               type="button"
               disabled={busy}
-              onClick={() => setStep('form')}
+              onClick={() => setStep("form")}
               className="rounded-lg px-3 py-2.5 text-sm text-ink-500 hover:text-ink-800"
             >
               Back
@@ -601,4 +652,4 @@ function ReportIssueForm({ asset, publicId, onCancel, onSuccess }) {
 }
 
 const field =
-  'w-full rounded-lg border border-border bg-white px-3 py-2 text-sm outline-none focus:border-brand-600 focus:ring-2 focus:ring-brand-600/15';
+  "w-full rounded-lg border border-border bg-white px-3 py-2 text-sm outline-none focus:border-brand-600 focus:ring-2 focus:ring-brand-600/15";
