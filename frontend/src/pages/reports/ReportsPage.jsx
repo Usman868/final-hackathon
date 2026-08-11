@@ -22,7 +22,6 @@ import {
 } from "recharts";
 import { format } from "date-fns";
 import jsPDF from "jspdf";
-import html2canvas from "html2canvas";
 import { getDashboardSummary } from "../../api/dashboard.api";
 import {
   PriorityBadge,
@@ -46,7 +45,6 @@ export default function ReportsPage() {
   const [summary, setSummary] = useState(null);
   const [loading, setLoading] = useState(true);
   const [exporting, setExporting] = useState(false);
-  const reportRef = useRef(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -86,77 +84,128 @@ export default function ReportsPage() {
   }));
 
   const exportPdf = async () => {
-    if (!reportRef.current) return;
+    if (!summary) return;
     setExporting(true);
     try {
-      // Tailwind v4 uses oklch(); html2canvas cannot parse it — inline RGB + strip CSS
-      const canvas = await html2canvas(reportRef.current, {
-        scale: 2,
-        useCORS: true,
-        backgroundColor: "#ffffff",
-        logging: false,
-        onclone: (clonedDoc) => {
-          const win = clonedDoc.defaultView || window;
-          const props = [
-            "color",
-            "background-color",
-            "border-top-color",
-            "border-right-color",
-            "border-bottom-color",
-            "border-left-color",
-            "outline-color",
-            "fill",
-            "stroke",
-            "box-shadow",
-          ];
-          clonedDoc.body.querySelectorAll("*").forEach((el) => {
-            try {
-              const cs = win.getComputedStyle(el);
-              props.forEach((prop) => {
-                const val = cs.getPropertyValue(prop);
-                if (val) el.style.setProperty(prop, val);
-              });
-            } catch {
-              /* ignore */
-            }
-          });
-          clonedDoc
-            .querySelectorAll('style, link[rel="stylesheet"]')
-            .forEach((n) => n.remove());
-        },
-      });
-
-      const img = canvas.toDataURL("image/png");
+      // Text/table PDF — no html2canvas, no oklch issues
       const pdf = new jsPDF("p", "mm", "a4");
       const pageWidth = pdf.internal.pageSize.getWidth();
-      const pageHeight = pdf.internal.pageSize.getHeight();
-      const margin = 10;
-      const imgWidth = pageWidth - margin * 2;
-      const imgHeight = (canvas.height * imgWidth) / canvas.width;
+      const margin = 14;
+      let y = 16;
 
-      let heightLeft = imgHeight;
-      let position = margin;
+      const ensureSpace = (need = 12) => {
+        if (y + need > pdf.internal.pageSize.getHeight() - 14) {
+          pdf.addPage();
+          y = 16;
+        }
+      };
 
-      pdf.setFontSize(14);
-      pdf.text("MaintainIQ – Operations Report", margin, 8);
+      pdf.setFont("helvetica", "bold");
+      pdf.setFontSize(16);
+      pdf.setTextColor(15, 23, 42);
+      pdf.text("MaintainIQ – Operations Report", margin, y);
+      y += 7;
+
+      pdf.setFont("helvetica", "normal");
       pdf.setFontSize(9);
       pdf.setTextColor(100);
       pdf.text(
         `Generated ${format(new Date(), "MMM d, yyyy HH:mm")}`,
         margin,
-        13,
+        y,
+      );
+      y += 10;
+
+      pdf.setDrawColor(226, 232, 240);
+      pdf.line(margin, y, pageWidth - margin, y);
+      y += 8;
+
+      pdf.setFont("helvetica", "bold");
+      pdf.setFontSize(11);
+      pdf.setTextColor(15, 23, 42);
+      pdf.text("Summary", margin, y);
+      y += 6;
+
+      pdf.setFont("helvetica", "normal");
+      pdf.setFontSize(10);
+      const kpis = [
+        ["Total assets", String(cards.totalAssets ?? cards.assets ?? "—")],
+        ["Open issues", String(cards.openIssues ?? cards.issuesOpen ?? "—")],
+        [
+          "Critical open",
+          String(cards.criticalIssues ?? cards.critical ?? "—"),
+        ],
+        [
+          "Technicians",
+          String(cards.technicians ?? cards.activeTechnicians ?? "—"),
+        ],
+      ];
+      kpis.forEach(([label, value]) => {
+        ensureSpace(6);
+        pdf.setTextColor(100);
+        pdf.text(label, margin, y);
+        pdf.setTextColor(15, 23, 42);
+        pdf.setFont("helvetica", "bold");
+        pdf.text(value, margin + 45, y);
+        pdf.setFont("helvetica", "normal");
+        y += 6;
+      });
+      y += 4;
+
+      const writeSection = (title, rows) => {
+        if (!rows.length) return;
+        ensureSpace(16);
+        pdf.setFont("helvetica", "bold");
+        pdf.setFontSize(11);
+        pdf.setTextColor(15, 23, 42);
+        pdf.text(title, margin, y);
+        y += 6;
+        pdf.setFont("helvetica", "normal");
+        pdf.setFontSize(9);
+        rows.forEach((line) => {
+          ensureSpace(5);
+          pdf.setTextColor(51, 65, 85);
+          pdf.text(String(line).slice(0, 95), margin, y);
+          y += 5;
+        });
+        y += 4;
+      };
+
+      writeSection(
+        "Issues by status",
+        issuesByStatus.map((r) => `${r.name}: ${r.value}`),
+      );
+      writeSection(
+        "Issues by priority",
+        issuesByPriority.map((r) => `${r.name}: ${r.value}`),
+      );
+      writeSection(
+        "Assets by category",
+        assetsByCategory.map((r) => `${r.name}: ${r.value}`),
       );
 
-      position = 16;
-      pdf.addImage(img, "PNG", margin, position, imgWidth, imgHeight);
-      heightLeft -= pageHeight - position;
+      const issueList =
+        summary.criticalIssues?.length > 0
+          ? summary.criticalIssues
+          : summary.recentIssues || [];
+      writeSection(
+        "Critical / recent issues",
+        issueList.map((iss) => {
+          const asset = iss.asset?.name || iss.asset?.assetCode || "—";
+          return `${iss.issueNumber || ""} | ${iss.priority || ""} | ${iss.status || ""} | ${iss.title || ""} | ${asset}`;
+        }),
+      );
 
-      while (heightLeft > 0) {
-        position = heightLeft - imgHeight + margin;
-        pdf.addPage();
-        pdf.addImage(img, "PNG", margin, position, imgWidth, imgHeight);
-        heightLeft -= pageHeight;
-      }
+      const upcoming = summary.upcomingServices || [];
+      writeSection(
+        "Upcoming services (30 days)",
+        upcoming.map((a) => {
+          const d = a.nextServiceDate
+            ? format(new Date(a.nextServiceDate), "MMM d, yyyy")
+            : "—";
+          return `${a.name || ""} (${a.assetCode || ""}) — ${d}`;
+        }),
+      );
 
       pdf.save(`MaintainIQ-Report-${format(new Date(), "yyyy-MM-dd")}.pdf`);
       toast.success("PDF downloaded");
