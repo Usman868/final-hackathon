@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
   FileDown,
   Loader2,
@@ -276,11 +276,7 @@ export default function ReportsPage() {
         </div>
       </div>
 
-      <div
-        ref={reportRef}
-        className="space-y-5 rounded-xl bg-surface-muted p-1 sm:p-0"
-      >
-        {/* KPI cards */}
+      <div className="space-y-5 rounded-xl bg-surface-muted p-1 sm:p-0">
         <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
           <Kpi
             icon={Boxes}
@@ -306,7 +302,6 @@ export default function ReportsPage() {
           />
         </div>
 
-        {/* Charts */}
         <div className="grid gap-4 lg:grid-cols-2">
           <div className="card p-4">
             <h2 className="mb-3 text-sm font-semibold text-ink-900">
@@ -395,7 +390,6 @@ export default function ReportsPage() {
           </div>
         )}
 
-        {/* Tables */}
         <div className="card overflow-hidden">
           <div className="border-b border-border px-5 py-3">
             <h2 className="text-sm font-semibold text-ink-900">
