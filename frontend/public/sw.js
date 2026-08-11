@@ -31,10 +31,32 @@ self.addEventListener("fetch", (event) => {
   if (url.origin !== self.location.origin) return;
   if (url.pathname.startsWith("/api")) return;
 
-  // Pages: always try network first (fresh index.html + correct asset hashes)
+  // Pages: network-first (fresh index.html + correct asset hashes)
   if (event.request.mode === "navigate") {
     event.respondWith(
-      fetch(event.request).catch(() => caches.match("/index.html")),
+      fetch(event.request)
+        .then((res) => {
+          if (res.ok) {
+            const copy = res.clone();
+            caches.open(CACHE).then((c) => c.put(event.request, copy));
+          }
+          return res;
+        })
+        .catch(async () => {
+          const cached =
+            (await caches.match("/index.html")) || (await caches.match("/"));
+          return (
+            cached ||
+            new Response(
+              "<!doctype html><title>Offline</title><h1>Offline</h1><p>Reconnect and refresh.</p>",
+              {
+                status: 503,
+                statusText: "Service Unavailable",
+                headers: { "Content-Type": "text/html; charset=utf-8" },
+              },
+            )
+          );
+        }),
     );
     return;
   }
@@ -45,34 +67,51 @@ self.addEventListener("fetch", (event) => {
     url.pathname.endsWith(".css") ||
     url.pathname.endsWith(".mjs");
 
-  // JS/CSS: network first — NEVER fall back to HTML
+  // JS/CSS: network-first — NEVER fall back to HTML
   if (isAsset) {
     event.respondWith(
       fetch(event.request)
         .then((res) => {
-          const copy = res.clone();
           if (res.ok) {
+            const copy = res.clone();
             caches.open(CACHE).then((c) => c.put(event.request, copy));
           }
           return res;
         })
-        .catch(() => caches.match(event.request)),
+        .catch(async () => {
+          const cached = await caches.match(event.request);
+          return (
+            cached ||
+            new Response("Asset unavailable (offline)", {
+              status: 503,
+              statusText: "Service Unavailable",
+              headers: { "Content-Type": "text/plain; charset=utf-8" },
+            })
+          );
+        }),
     );
     return;
   }
 
+  // Other same-origin GET: cache then network
   event.respondWith(
-    caches.match(event.request).then(
-      (cached) =>
-        cached ||
-        fetch(event.request).then((res) => {
+    caches.match(event.request).then(async (cached) => {
+      if (cached) return cached;
+      try {
+        const res = await fetch(event.request);
+        if (res.ok) {
           const copy = res.clone();
-          if (res.ok) {
-            caches.open(CACHE).then((c) => c.put(event.request, copy));
-          }
-          return res;
-        }),
-    ),
+          caches.open(CACHE).then((c) => c.put(event.request, copy));
+        }
+        return res;
+      } catch {
+        return new Response("Resource unavailable (offline)", {
+          status: 503,
+          statusText: "Service Unavailable",
+          headers: { "Content-Type": "text/plain; charset=utf-8" },
+        });
+      }
+    }),
   );
 });
 
